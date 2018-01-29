@@ -33,7 +33,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${BUILD_TYPE}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -funroll-all-loops")
-
+set(CMAKE_C_FLAGS_RELEASE "-O3 -funroll-all-loops")
 
 # option to add static libgcc and libstdc++
 option(CMAKE_LINK_STATIC "link as much as possible libraries static" OFF)
