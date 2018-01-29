@@ -1,28 +1,69 @@
-# XMR-Stak-POWER - Monero mining software for POWER8 and later
+# XMR-Stak-SPARC - Monero mining software for SPARC T4 and later
 
-XMR-Stak-POWER is a universal Stratum pool miner and a fork of XMR-Stak-CPU. There is also an [AMD GPU version](https://github.com/fireice-uk/xmr-stak-amd) and an [NVIDIA GPU version](https://github.com/fireice-uk/xmr-stak-nvidia)
+XMR-Stak-SPARC is a universal Stratum pool miner and a fork of XMR-Stak-CPU. There is also an [AMD GPU version](https://github.com/fireice-uk/xmr-stak-amd) and an [NVIDIA GPU version](https://github.com/fireice-uk/xmr-stak-nvidia)
 
 ## HTML and JSON API report configuraton
 
 To configure the reports shown above you need to edit the httpd_port variable. Then enable wifi on your phone and navigate to [miner ip address]:[httpd_port] in your phone browser. If you want to use the data in scripts, you can get the JSON version of the data at url [miner ip address]:[httpd_port]/api.json
 
-## Installing IBM compiler
-
-XMR-Stak-POWER will currently only compile with the GCC 6.3.1 compiler included in the IBM AT10.0 developer tools. [IBM Advance Toolchain](https://www.ibm.com/developerworks/community/wikis/home?lang=en#!/wiki/W51a7ffcf4dfd_4b40_9d82_446ebc23c550/page/IBM Advance Toolchain for PowerLinux Documentation)
 ## Compile guides
 
-- [Linux](LINUXCOMPILE.md)
+This procedure has been tested on Solaris 11.3 only, YMMV.
 
-#### CPU mining performance 
+This was required because Solaris ships gcc-4.8 built with Solaris native as - which understands the `aes_eround01` etc... instructions but ships gcc-5.4 with gnu as from 2013 (2.23) which does not. If you compile something with inline assembly that has the `aes_eround01` instructions in different instructions are emmitted and an illegal instruction is thrown. When there is time this will get bugged.
 
-Here are some numbers:
+The flags that gcc is built with are pulled from the output of `/usr/gcc/4.8/bin/gcc -v`.
 
-* **Dual POWER8 10C @ 2.8GHz, running 2 threads per core, hugepages enabled** - 3550 H/s @ 530W
-* **Dual POWER9-SMT4 16C @ ??? GHz, hugepages enabled** - 2950 H/s @ 350W (old version benchmark)
+1. Make sure the packages are found:
+   ```
+   pkg install gcc gmp mpc mpfr cmake
+   ```
+2. Download gcc-5.5.0
+3. Build gcc-5.5.0
+   ```
+   tar xvf gcc-5.5.0
+   mkdir build
+   cd build
+   ../gcc-5.5.0/configure --prefix=/usr/gcc/5.5 --mandir=/usr/gcc/5.5/share/man --bindir=/usr/gcc/5.5/bin --libdir=/usr/gcc/5.5/lib --sbindir=/usr/gcc/5.5/sbin --infodir=/usr/gcc/5.5/share/info --libexecdir=/usr/gcc/5.5/lib --enable-languages=c,c++ --enable-shared --with-gmp-include=/usr/include/gmp --with-mpfr-include=/usr/include/mpfr --without-gnu-ld --with-ld=/usr/bin/ld --without-gnu-as --with-as=/usr/bin/as CFLAGS='-g -O2  -mtune=ultrasparc -mcpu=ultrasparc -mno-unaligned-doubles' CXXFLAGS='-g -O2 -mtune=ultrasparc -mcpu=ultrasparc -mno-unaligned-doubles'
+   gmake -j 16
+   gmake install
+   ```
+4. Build and install google test
+   ```
+   git clone https://github.com/google/googletest.git
+   mkdir build
+   cd build
+   CXXFLAGS='-m64' CFLAGS='-m64' CXX=/usr/gcc/5.5/bin/g++ cmake ../googletest
+   gmake -j 16
+   gmake install
+   ```
+5. Build and install
+   ```
+   git clone https://github.com/oforpertainingtothesun/xmr-stak-sparc
+   mkdir build
+   cd build
+   CXXFLAGS='-m64' CFLAGS='-m64' CXX=/usr/gcc/5.5/bin/g++ cmake ../xmr-stak-sparc \
+       -DHWLOC_ENABLE=OFF \
+       -DMICROHTTPD_ENABLE=OFF \
+       -DCMAKE_INSTALL_PREFIX=/usr/local/xmr-stak-sparc
+   gmake -j 16 install
+   ```
 
-## Default dev donation
-By default the miner will donate 0.88% of the hashpower.
-If you have POWER hardware available you are probably rich, so please donate to my address!
+### Notes:
+
+* *CMake 3:* This dependency has been removed but this means that config.txt will be overwritten by the built file under install if it is not used.
+* *RPath handling*: This has to be done at build-time 
+
+## Donate!
+
+If you have SPARC hardware available you are probably rich, so please donate to my address!
+
+oforpertainingtothesun
+```
+444jF3JDkjVgf3wc4SSWbmTqkbANndx3YEnCt2F2zQsTEuVAsFVJf5XgGuM9Y5nGPPeLCAk8WG7tdTSkGwYxTfwWJaXej5g
+```
+
+Conversion to work with PPC (le):
 
 nioroso-x3:
 ```
@@ -63,7 +104,7 @@ or
 `make -j install` for faster parallel build
 and install.
 
-### xmr-stak-power Compile Options
+### xmr-stak-sparc Compile Options
 - `CMAKE_INSTALL_PREFIX` install miner to the home folder
   - `cmake . -DCMAKE_INSTALL_PREFIX=$HOME/xmr-stak-cpu`
   - you can find the binary and the `config.txt` file after `make install` in `$HOME/xmr-stak-cpu/bin`

@@ -1,11 +1,14 @@
 project(xmr-stak)
 
-cmake_minimum_required(VERSION 3.0.1)
+cmake_minimum_required(VERSION 2.8)
 
 # enforce C++11
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 11)
+if (${CMAKE_MAJOR_VERSION} LESS 3)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "install prefix" FORCE)
@@ -216,25 +219,38 @@ add_executable(xmr-stak
 set(EXECUTABLE_OUTPUT_PATH "bin")
 target_link_libraries(xmr-stak ${LIBS} xmr-stak-c xmr-stak-cpp)
 
+add_executable(gtest test/googletest_correct.cpp)
+target_link_libraries(gtest ${GTEST_BOTH_LIBRARIES} xmr-stak-cpp xmr-stak-c)
+
 ################################################################################
 # Install
 ################################################################################
 
+set(CMAKE_SKIP_RPATH true)
+#set(CMAKE_BUILD_WITH_INSTALL_RPATH true)
+#set(CMAKE_SKIP_BUILD_RPATH false)
+set(CMAKE_INSTALL_RPATH "/usr/gcc/5.5/lib/sparcv9")
+#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH true)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath ${CMAKE_INSTALL_RPATH}")
+
 # do not install the binary if the project and install are equal
 if( NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "${PROJECT_BINARY_DIR}" )
     install(TARGETS xmr-stak
+            RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
+    install(TARGETS gtest
             RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 endif()
 
 
 # avoid overwrite of user defined settings
 # install `config.txt`if file not exists in `${CMAKE_INSTALL_PREFIX}/bin`
-install(CODE " \
+if (${CMAKE_MAJOR_VERSION} LESS 3)
+  install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.txt DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+else()
+  install(CODE " \
     if(NOT EXISTS ${CMAKE_INSTALL_PREFIX}/bin/config.txt)\n   \
         file(INSTALL ${CMAKE_CURRENT_SOURCE_DIR}/config.txt   \
             DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)\n        \
     endif()"
-)
-
-add_executable(gtest test/googletest_correct.cpp)
-target_link_libraries(gtest ${GTEST_BOTH_LIBRARIES} xmr-stak-cpp xmr-stak-c)
+  )
+endif()
