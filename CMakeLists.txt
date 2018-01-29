@@ -226,12 +226,11 @@ target_link_libraries(gtest ${GTEST_BOTH_LIBRARIES} xmr-stak-cpp xmr-stak-c)
 # Install
 ################################################################################
 
-set(CMAKE_SKIP_RPATH true)
-#set(CMAKE_BUILD_WITH_INSTALL_RPATH true)
-#set(CMAKE_SKIP_BUILD_RPATH false)
-set(CMAKE_INSTALL_RPATH "/usr/gcc/5.5/lib/sparcv9")
-#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH true)
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath ${CMAKE_INSTALL_RPATH}")
+if (ARCHITECTURE STREQUAL "sun4v")
+  set(CMAKE_SKIP_RPATH true)
+  set(CMAKE_INSTALL_RPATH "/usr/gcc/5.5/lib/sparcv9")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath ${CMAKE_INSTALL_RPATH}")
+endif()
 
 # do not install the binary if the project and install are equal
 if( NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "${PROJECT_BINARY_DIR}" )

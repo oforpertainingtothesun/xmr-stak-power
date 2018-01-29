@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
                              "optimized by fireice_uk).\n");
   printer::inst()->print_str(
       "Brought to you by fireice_uk and psychocrypt under GPLv3.\n");
-  printer::inst()->print_str("Ported to ppc64le by nioroso-x3.\n\n");
+  printer::inst()->print_str("Ported to ppc64le by nioroso-x3.\n");
   printer::inst()->print_str("Ported to sparc by oforpertainingtothesun\n\n");
   char buffer[64];
   snprintf(buffer, sizeof(buffer),

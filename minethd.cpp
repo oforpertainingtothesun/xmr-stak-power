@@ -31,6 +31,7 @@
 #include <map>
 #include <stdio.h>
 #include <thread>
+#include <iostream>
 #ifdef _WIN32
 #include <windows.h>
 
@@ -285,10 +286,8 @@ void minethd::work_main() {
 
   auto ctx = make_context();
   uint64_t iCount = 0;
-  uint32_t *piNonce;
   job_result result;
 
-  piNonce = (uint32_t *)(oWork.bWorkBlob + 39);
   iConsumeCnt++;
 
   while (bQuit == 0) {
@@ -306,7 +305,7 @@ void minethd::work_main() {
     }
 
     if (oWork.bNiceHash)
-      result.iNonce = calc_nicehash_nonce(*piNonce, oWork.iResumeCnt);
+      result.iNonce = calc_nicehash_nonce(get32byte(oWork.bWorkBlob, 39), oWork.iResumeCnt);
     else
       result.iNonce = calc_start_nonce(oWork.iResumeCnt);
 
@@ -326,13 +325,13 @@ void minethd::work_main() {
       }
       iCount++;
 
-      *piNonce = ++result.iNonce;
+      set32byte(oWork.bWorkBlob, 39, ++result.iNonce);
 
       auto out = ctx->calculateResult(oWork.bWorkBlob, oWork.iWorkSize);
 
       uint64_t *piHashVal = reinterpret_cast<uint64_t *>(out + 24);
-      if (*piHashVal < oWork.iTarget) {
-        memcpy(result.bResult, out, sizeof(out));
+      if (swab64(*piHashVal) < oWork.iTarget) {
+        memcpy(result.bResult, out, sizeof(result.bResult));
         executor::inst()->push_event(ex_event(result, oWork.iPoolId));
       }
 
@@ -350,14 +349,10 @@ void minethd::double_work_main() {
   auto ctx0 = make_context();
   auto ctx1 = make_context();
   uint64_t iCount = 0;
-  uint32_t *piNonce0, *piNonce1;
   uint8_t bDoubleHashOut[64];
   uint8_t bDoubleWorkBlob[sizeof(miner_work::bWorkBlob) * 2];
   uint32_t iNonce;
   job_result res;
-
-  piNonce0 = (uint32_t *)(bDoubleWorkBlob + 39);
-  piNonce1 = nullptr;
 
   iConsumeCnt++;
 
@@ -376,12 +371,11 @@ void minethd::double_work_main() {
       memcpy(bDoubleWorkBlob, oWork.bWorkBlob, oWork.iWorkSize);
       memcpy(bDoubleWorkBlob + oWork.iWorkSize, oWork.bWorkBlob,
              oWork.iWorkSize);
-      piNonce1 = (uint32_t *)(bDoubleWorkBlob + oWork.iWorkSize + 39);
       continue;
     }
 
     if (oWork.bNiceHash)
-      iNonce = calc_nicehash_nonce(*piNonce0, oWork.iResumeCnt);
+      iNonce = calc_nicehash_nonce(get32byte(bDoubleWorkBlob, 39), oWork.iResumeCnt);
     else
       iNonce = calc_start_nonce(oWork.iResumeCnt);
 
@@ -401,8 +395,8 @@ void minethd::double_work_main() {
 
       iCount += 2;
 
-      *piNonce0 = ++iNonce;
-      *piNonce1 = ++iNonce;
+      set32byte(bDoubleWorkBlob, 39, ++iNonce);
+      set32byte(bDoubleWorkBlob + oWork.iWorkSize, 39, ++iNonce);
 
       // TODO: Implement the double or more hashing
       auto out0 = ctx0->calculateResult(bDoubleWorkBlob, oWork.iWorkSize);
@@ -426,6 +420,5 @@ void minethd::double_work_main() {
     consume_work();
     memcpy(bDoubleWorkBlob, oWork.bWorkBlob, oWork.iWorkSize);
     memcpy(bDoubleWorkBlob + oWork.iWorkSize, oWork.bWorkBlob, oWork.iWorkSize);
-    piNonce1 = (uint32_t *)(bDoubleWorkBlob + oWork.iWorkSize + 39);
   }
 }

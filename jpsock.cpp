@@ -23,10 +23,12 @@
 
 #include <stdarg.h>
 #include <assert.h>
+#include <iostream>
 
 #include "jpsock.h"
 #include "executor.h"
 #include "jconf.h"
+#include "crypto/portability.hpp"
 
 #include "rapidjson/document.h"
 #include "jext.h"
@@ -389,11 +391,12 @@ bool jpsock::process_pool_job(const opq_json_val* params)
 	if(target_slen <= 8)
 	{
 		uint32_t iTempInt = 0;
-		char sTempStr[] = "00000000"; // Little-endian CPU FTW
+		char sTempStr[] = "00000000";
 		memcpy(sTempStr, target->GetString(), target_slen);
 		if(!hex2bin(sTempStr, 8, (unsigned char*)&iTempInt) || iTempInt == 0)
 			return set_socket_error("PARSE error: Invalid target");
 
+		iTempInt = swab32(iTempInt);
 		oPoolJob.iTarget = t32_to_t64(iTempInt);
 	}
 	else if(target_slen <= 16)
@@ -403,6 +406,7 @@ bool jpsock::process_pool_job(const opq_json_val* params)
 		memcpy(sTempStr, target->GetString(), target_slen);
 		if(!hex2bin(sTempStr, 16, (unsigned char*)&oPoolJob.iTarget) || oPoolJob.iTarget == 0)
 			return set_socket_error("PARSE error: Invalid target");
+		oPoolJob.iTarget = swab64(oPoolJob.iTarget);
 	}
 	else
 		return set_socket_error("PARSE error: Job error 5");
@@ -550,6 +554,7 @@ bool jpsock::cmd_submit(const char* sJobId, uint32_t iNonce, const uint8_t* bRes
 	char sNonce[9];
 	char sResult[65];
 
+	iNonce = swab32(iNonce);
 	bin2hex((unsigned char*)&iNonce, 4, sNonce);
 	sNonce[8] = '\0';
 
