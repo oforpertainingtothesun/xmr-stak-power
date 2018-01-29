@@ -1,7 +1,7 @@
 #pragma once
 #include <thread>
 #include <atomic>
-#include "crypto/cryptonight.h"
+#include "crypto/cryptonight.hpp"
 
 class telemetry
 {
@@ -98,8 +98,8 @@ public:
 	std::atomic<uint64_t> iTimestamp;
 
 private:
-	typedef void (*cn_hash_fun)(const void*, size_t, void*, cryptonight_ctx*);
-	typedef void (*cn_hash_fun_dbl)(const void*, size_t, void*, cryptonight_ctx* __restrict, cryptonight_ctx* __restrict);
+	typedef void (*cn_hash_fun)(const void*, size_t, void*, cryptonight::Cryptonight*);
+	typedef void (*cn_hash_fun_dbl)(const void*, size_t, void*, cryptonight::Cryptonight* __restrict, cryptonight::Cryptonight* __restrict);
 
 	minethd(miner_work& pWork, size_t iNo, char double_work, char no_prefetch, int64_t affinity);
 

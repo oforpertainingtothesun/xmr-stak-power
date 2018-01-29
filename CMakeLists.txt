@@ -1,4 +1,4 @@
-project(xmr-stak-power)
+project(xmr-stak)
 
 cmake_minimum_required(VERSION 3.0.1)
 
@@ -13,6 +13,10 @@ endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 # allow user to extent CMAKE_PREFIX_PATH via environment variable
 list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+
+enable_testing()
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
 
 ################################################################################
 # CMake user options
@@ -35,7 +39,7 @@ endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${BUILD_TYPE}")
 
 # option to add static libgcc and libstdc++
-option(CMAKE_LINK_STATIC "link as much as possible libraries static" ON)
+option(CMAKE_LINK_STATIC "link as much as possible libraries static" OFF)
 
 ################################################################################
 # Find PThreads
@@ -146,12 +150,6 @@ endif()
 # Compile & Link
 ################################################################################
 
-# activate POWER8 vector instructions
-if(NOT CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -mcpu=native -mtune=native -m64 -mdirect-move -mcrypto -mpower8-vector -flax-vector-conversions")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast -mcpu=native -mtune=native -m64 -mdirect-move -mcrypto -mpower8-vector -flax-vector-conversions")
-endif()
-
 # activate static libgcc and libstdc++ linking
 if(CMAKE_LINK_STATIC)
     set(BUILD_SHARED_LIBRARIES OFF)
@@ -160,8 +158,46 @@ if(CMAKE_LINK_STATIC)
     set(LIBS "-static-libgcc -static-libstdc++ ${LIBS}")
 endif()
 
-file(GLOB SRCFILES_CPP "*.cpp" "crypto/*.cpp")
+include_directories(crypto)
+file(GLOB SRCFILES_CPP
+  "console.cpp"
+  "executor.cpp"
+  "httpd.cpp"
+  "jconf.cpp"
+  "jpsock.cpp"
+  "minethd.cpp"
+  "socket.cpp"
+  "webdesign.cpp"
+  "crypto/keccak.cpp" "crypto/cryptonight.cpp" "crypto/groestl.cpp")
 file(GLOB SRCFILES_C "crypto/*.c")
+
+include(cmake/Architecture.cmake)
+
+## x86 specific build
+if (ARCHITECTURE STREQUAL "x86_64")
+  list(APPEND SRCFILES_CPP crypto/cryptonight_aesni.cpp crypto/cryptonight_aesni.hpp)
+  set_source_files_properties(crypto/cryptonight_aesni.cpp PROPERTIES COMPILE_FLAGS -maes)
+endif()
+
+## Power pc specific build
+if (ARCHITECTURE MATCHES ".*ppc.*")
+  add_definitions(-mabi=altivec -maltivec)
+  list(APPEND SRCFILES_CPP crypto/cryptonight_altivec.cpp crypto/cryptonight_altivec.hpp)
+  set_source_files_properties(crypto/cryptonight_altivec.cpp PROPERTIES COMPILE_FLAGS "-mvsx -mcrypto -mtune=native -mcpu=native")
+endif()
+
+## Hacks to ensure AIX works
+if (ARCHITECTURE MATCHES ".*aix.*")
+  add_definitions(-pthread)
+  file(GLOB LIBPATH /opt/freeware/lib/gcc/*/*/pthread/ppc64)
+  link_directories(${LIBPATH})
+endif()
+
+## Sparc specific build
+if (ARCHITECTURE STREQUAL "sun4v")
+  list(APPEND SRCFILES_CPP crypto/cryptonight_sparc.cpp crypto/cryptonight_sparc.hpp)
+  set_source_files_properties(crypto/cryptonight_sparc.cpp PROPERTIES COMPILE_FLAGS "-mtune=native -mcpu=native")
+endif()
 
 add_library(xmr-stak-c
     STATIC
@@ -170,12 +206,18 @@ add_library(xmr-stak-c
 set_property(TARGET xmr-stak-c PROPERTY C_STANDARD 99)
 target_link_libraries(xmr-stak-c ${LIBS})
 
-add_executable(xmr-stak-power
-    ${SRCFILES_CPP}
+add_library(xmr-stak-cpp
+  STATIC
+  ${SRCFILES_CPP}
+)
+target_link_libraries(xmr-stak-cpp ${LIBS} xmr-stak-c)
+
+add_executable(xmr-stak
+    cli-miner.cpp
 )
 
 set(EXECUTABLE_OUTPUT_PATH "bin")
-target_link_libraries(xmr-stak-power ${LIBS} xmr-stak-c)
+target_link_libraries(xmr-stak ${LIBS} xmr-stak-c xmr-stak-cpp)
 
 ################################################################################
 # Install
@@ -183,7 +225,7 @@ target_link_libraries(xmr-stak-power ${LIBS} xmr-stak-c)
 
 # do not install the binary if the project and install are equal
 if( NOT "${CMAKE_INSTALL_PREFIX}" STREQUAL "${PROJECT_BINARY_DIR}" )
-    install(TARGETS xmr-stak-power
+    install(TARGETS xmr-stak
             RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin")
 endif()
 
@@ -196,3 +238,6 @@ install(CODE " \
             DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)\n        \
     endif()"
 )
+
+add_executable(gtest test/googletest_correct.cpp)
+target_link_libraries(gtest ${GTEST_BOTH_LIBRARIES} xmr-stak-cpp xmr-stak-c)
