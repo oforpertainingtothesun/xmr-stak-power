@@ -34,7 +34,7 @@ void CryptonightSparc::explodeScratchPad()
 uint64_t CryptonightSparc::mul128(uint64_t multiplier, uint64_t multiplicand, uint64_t *product_hi)
 {
     uint64_t hi;
-    __asm__("umulxhi %1, %2, %0" : "=g"(hi) : "g"(multiplier), "g"(multiplicand));
+    __asm__("umulxhi %1, %2, %0" : "=r"(hi) : "r"(multiplier), "r"(multiplicand));
     *product_hi = hi;
     return multiplier * multiplicand;
 }
@@ -64,7 +64,7 @@ void CryptonightSparc::iteration(size_t total)
     uint64_t multiplier   = swab64(cv0);
     uint64_t multiplicand = swab64(dst[0]);
     uint64_t lo           = multiplier * multiplicand, hi;
-    __asm__("umulxhi %1, %2, %0" : "=g"(hi) : "g"(multiplier), "g"(multiplicand));
+    __asm__("umulxhi %1, %2, %0" : "=r"(hi) : "r"(multiplier), "r"(multiplicand));
 
     lo += swab64(av1);
     hi += swab64(av0);

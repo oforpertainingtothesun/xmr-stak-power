@@ -18,25 +18,19 @@ enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
+include(cmake/Architecture.cmake)
+
 ################################################################################
 # CMake user options
 ################################################################################
-
-# IBM AT10.0 with gcc 6.3.1 is required
-# https://github.com/fireice-uk/xmr-stak-nvidia/pull/10#issuecomment-290821792
-# If you remove this guard to compile with older gcc versions the miner will produce
-# a high rate of wrong shares.
-if(${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 6.3.1)
-        message(FATAL_ERROR "Please use the IBM developer tools.")
-    endif()
-endif()
 
 set(BUILD_TYPE "Release;Debug")
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif()
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "${BUILD_TYPE}")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -funroll-all-loops")
+
 
 # option to add static libgcc and libstdc++
 option(CMAKE_LINK_STATIC "link as much as possible libraries static" OFF)
@@ -139,11 +133,14 @@ else()
 endif()
 
 ################################################################################
-# Windows Sockets
+# Sockets
 ################################################################################
 
 if(WIN32)
     set(LIBS ${LIBS} wsock32 ws2_32)
+endif()
+if(CMAKE_SYSTEM_NAME MATCHES SunOS)
+    set(LIBS ${LIBS} socket)
 endif()
 
 ################################################################################
