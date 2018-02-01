@@ -8,9 +8,11 @@ To configure the reports shown above you need to edit the httpd_port variable. T
 
 ## Compile guides
 
+### Solaris 11.3
+
 This procedure has been tested on Solaris 11.3 only, YMMV.
 
-This was required because Solaris ships gcc-4.8 built with Solaris native as - which understands the `aes_eround01` etc... instructions but ships gcc-5.4 with gnu as from 2013 (2.23) which does not. If you compile something with inline assembly that has the `aes_eround01` instructions in different instructions are emmitted and an illegal instruction is thrown. When there is time this will get bugged.
+This was required because Solaris ships gcc-4.8 built with Solaris native as - which understands the `aes_eround01` etc... instructions but ships gcc-5.4 with gnu as from 2013 (2.23) which does not. If you compile something with inline assembly that has the `aes_eround01` instructions in different instructions are emmitted and an illegal instruction is thrown.
 
 The flags that gcc is built with are pulled from the output of `/usr/gcc/4.8/bin/gcc -v`.
 
@@ -49,10 +51,24 @@ The flags that gcc is built with are pulled from the output of `/usr/gcc/4.8/bin
    gmake -j 16 install
    ```
 
+### Solaris 11.4 (beta)
+
+It looks like Oracle have upgraded binutils sufficiently for their gcc 5.4 version to correctly work with hardware AES. This has been tested, but not quite fully, on Solaris 11.4 (beta).
+
+1. Make sure that gcc-5.4 is available:
+   ```
+   pkg change-facet 'facet.version-lock.*=false'
+   ```
+2. Install g++ and dependencies
+   ```
+   pkg install gcc@5.4 cmake
+   ```
+3. Go to step 4 of Solaris 11.3 guide.
+
 ### Notes:
 
 * *CMake 3:* This dependency has been removed but this means that config.txt will be overwritten by the built file under install if it is not used.
-* *RPath handling*: This has to be done at build-time 
+* *RPath handling*: This has to be done at build-time at the moment but a better way is being figured out.
 
 ## Donate!
 
