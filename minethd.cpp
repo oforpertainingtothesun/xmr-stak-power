@@ -78,9 +78,9 @@ void thd_setaffinity(std::thread::native_handle_type h, uint64_t cpu_id) {
 
 #ifdef __x86_64
 #include "cryptonight_aesni.hpp"
-#elif __PPC__
+#elif __PPC64__
 #include "cryptonight_altivec.hpp"
-#else
+#elif __sparcv9
 #include "cryptonight_sparc.hpp"
 #endif
 
@@ -162,9 +162,9 @@ std::unique_ptr<cryptonight::Cryptonight> make_context() {
   if (jconf::inst()->HaveHardwareAes()) {
 #ifdef __x86_64
     return type(new cryptonight::CryptonightAESNI);
-#elif __PPC__
+#elif __PPC64__
     return type(new cryptonight::CryptonightAltivec);
-#else
+#elif __sparcv9
     return type(new cryptonight::CryptonightSparc);
 #endif
   }

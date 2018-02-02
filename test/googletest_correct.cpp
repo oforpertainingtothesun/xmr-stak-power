@@ -4,9 +4,9 @@
 
 #ifdef __x86_64
 #include "cryptonight_aesni.hpp"
-#elif __PPC__
+#elif __PPC64__
 #include "cryptonight_altivec.hpp"
-#else
+#elif __sparcv9
 #include "cryptonight_sparc.hpp"
 #endif
 
@@ -40,8 +40,10 @@ public:
 typedef testing::Types<Cryptonight, CryptonightAESNI> Implementations;
 #elif __PPC__
 typedef testing::Types<Cryptonight, CryptonightAltivec> Implementations;
-#else
+#elif __sparcv9
 typedef testing::Types<Cryptonight, CryptonightSparc> Implementations;
+#else
+typedef testing::Types<Cryptonight> Implementations;
 #endif
 
 TYPED_TEST_CASE(HashCorrect, Implementations);
