@@ -281,37 +281,19 @@ array::type<uint8_t, 64> &Cryptonight::calculateResult()
 
 array::type<uint8_t, 64> &Cryptonight::calculateResult(const uint8_t *in, size_t len)
 {
-  std::chrono::steady_clock::time_point times[10];
-  size_t stage   = 0;
-  times[stage++] = std::chrono::steady_clock::now();
   initKeccak(in, len);
-  times[stage++] = std::chrono::steady_clock::now();
   initRoundKeys(0);
-  times[stage++] = std::chrono::steady_clock::now();
   explodeScratchPad();
   initAandB();
-  times[stage++] = std::chrono::steady_clock::now();
   iterations();
-  times[stage++] = std::chrono::steady_clock::now();
   initRoundKeys(32);
-  times[stage++] = std::chrono::steady_clock::now();
   implodeScratchPad();
-  times[stage++] = std::chrono::steady_clock::now();
   rerunKeccak();
-  times[stage++] = std::chrono::steady_clock::now();
-  auto &r        = calculateResult();
-  times[stage++] = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < 9; ++i)
-  {
-    m_stage_times[i] += times[i + 1] - times[i];
-  }
-  return r;
+  return calculateResult();
 }
 
 Cryptonight::Cryptonight() : m_scratchpad(nullptr, ::free)
 {
-  for (auto &x : m_stage_times)
-    x = std::chrono::steady_clock::duration(0);
   void *memory;
 #ifndef __sparc
   if (::posix_memalign(&memory, AES_BLOCK_SIZE, MEMORY) != 0) throw std::bad_alloc();

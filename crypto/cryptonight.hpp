@@ -104,9 +104,6 @@ protected:
     uint8_t v[AES_BLOCK_SIZE];
   };
 
-  //! Record the stage times for benchmarking
-  std::chrono::steady_clock::duration m_stage_times[9];
-
   //! Our scratchpad memory
   std::unique_ptr<uint8_t[], decltype(&::free)> m_scratchpad;
 
@@ -199,20 +196,6 @@ public:
   array::type<uint8_t, 64> &calculateResult(const uint8_t *in, size_t len);
 
   /*!
-   * Dump all of the stage times to the output iterator
-   * @tparam T duration type for output
-   * @tparam O output iterator type
-   * @param output The output iterator
-   */
-  template <typename T, typename O> void stageTimes(O output)
-  {
-    for (auto &x : m_stage_times)
-    {
-      *output++ = std::chrono::duration_cast<T>(x).count();
-    }
-  }
-
-  /*!
    * Calculate state index given a stack variable
    * \param a The stack variable
    * \return The state index
@@ -237,7 +220,11 @@ public:
    */
   inline uint32_t stateIndex(const uint64_t *a) const
   {
-    return ((swab64(*a) >> 4) & (TOTALBLOCKS - 1)) << 4;
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    return swab32(*a >> 32) & ((TOTALBLOCKS -1) << 4);
+#else
+    return swab32(*a) & ((TOTALBLOCKS -1) << 4);
+#endif
   }
 
   /*!

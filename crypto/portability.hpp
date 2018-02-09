@@ -4,16 +4,24 @@
 #include <cstdint>
 #include <cstdlib>
 
+#ifdef __sun
+#include <sys/byteorder.h>
+#endif
+
 constexpr uint32_t swab32(uint32_t in)
 {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
   return in;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#ifdef BSWAP_32
+  return BSWAP_32(in);
+#else
   return
       ((in & 0xff000000) >> 24) |
       ((in & 0x00ff0000) >> 8) |
       ((in & 0x0000ff00) << 8) |
       ((in & 0x000000ff) << 24);
+#endif
 #else
 #error Unknown byte order...
 #endif
@@ -24,6 +32,9 @@ constexpr uint64_t swab64(uint64_t in)
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
   return in;
 #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#ifdef BSWAP_64
+  return BSWAP_64(in);
+#else
   return
       ((in & 0xff00000000000000) >> 56) |
       ((in & 0x00ff000000000000) >> 40) |
@@ -33,6 +44,7 @@ constexpr uint64_t swab64(uint64_t in)
       ((in & 0x0000000000ff0000) << 24) |
       ((in & 0x000000000000ff00) << 40) |
       ((in & 0x00000000000000ff) << 56);
+#endif
 #else
 #error Unknown byte order...
 #endif
